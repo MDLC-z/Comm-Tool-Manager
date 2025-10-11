@@ -61,4 +61,6 @@ npm start
 ## Author
 
 Comm Tool Manager was created by [@MDLC-z](@MDLC-z)
+
 Special thanks to [@Drakz0n](https://github.com/Drakz0n) creator of [CommFlow](https://github.com/Drakz0n/CommFlow) for inspiring parts of this project
+TQM bro 💚
