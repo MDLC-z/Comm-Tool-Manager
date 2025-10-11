@@ -1,3 +1,6 @@
+# VS
+.vscode/
+
 # Dependencias
 node_modules/
 
