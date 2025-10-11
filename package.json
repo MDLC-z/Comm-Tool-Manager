@@ -1,5 +1,5 @@
 {
-  "name": "comm-manager",
+  "name": "comm-tool-manager",
   "version": "0.0.1",
   "description": "Local commission manager for freelance artists.",
   "main": "src/main.js",
