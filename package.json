@@ -1,0 +1,85 @@
+{
+  "name": "comm-manager",
+  "version": "1.0.0",
+  "description": "Gestor de commissiones local",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win --x64",
+    "dist:portable": "electron-builder --win --x64",
+    "dist:linux": "electron-builder --linux",
+    "dist:linux-portable": "electron-builder --linux --x64 --dir",
+    "dist:all": "electron-builder --win --linux --mac",
+    "clean": "rm -rf dist node_modules/fsevents*"
+  },
+  "keywords": ["commissions", "art", "manager", "organizer"],
+  "author": "Pan🍞",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "electron-reload": "^2.0.0-alpha.1",
+    "electron-squirrel-startup": "^1.0.1",
+    "smart-buffer": "^4.2.0"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^1.8.0",
+    "electron": "^38.2.1",
+    "electron-builder": "^26.0.12",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.mldc.comm-manager",
+    "productName": "Comm Manager",
+    "copyright": "Copyright © 2025 (pan🍞)",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "lang/**/*", 
+      "assets/**/*",
+      "!**/node_modules/fsevents/**",
+      "!**/node_modules/fsevents*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "tar.gz",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Graphics",
+      "synopsis": "Gestor de comisiones para artistas",
+      "description": "Aplicación para gestionar y organizar comisiones de arte de manera local y privada."
+    },
+    "asar": true
+  }
+}

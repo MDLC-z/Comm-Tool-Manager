@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+
+# Builds y binarios
+dist/
+out/
+*.exe
+*.nupkg
+*.zip
+*.msi
+*.AppImage
+
+# Logs y temporales
+*.log
+.DS_Store
+Thumbs.db
+
+# Configuración local
+.env

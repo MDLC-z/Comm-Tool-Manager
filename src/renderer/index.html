@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="app_title">Comm Tool Manager</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <!-- FONDO FIJO -->
+    <div id="app-background"></div>
+    
+    <div id="app">
+
+        <!-- VISTA: WELCOME -->
+        <div id="view-welcome" class="view active welcome-page">
+            <div class="container">
+                <header class="welcome-header">
+                    <div class="user-greeting">
+                        <h1 data-i18n="welcome.title">Welcome</h1>
+                        <span id="username-display">User</span>
+                    </div>
+                    <div class="version">v1.0.0</div>
+                </header>
+
+                <main class="welcome-main">
+                    <div class="action-cards">
+                        <div class="action-card" onclick="showView('comms')">
+                            <h2 data-i18n="welcome.manage_comms">📋 Manage Comms</h2>
+                            <p data-i18n="welcome.manage_comms_desc">View, edit and organize your work</p>
+                        </div>
+
+                        <div class="action-card" onclick="showView('config')">
+                            <h2 data-i18n="welcome.settings">⚙️ Settings</h2>
+                            <p data-i18n="welcome.settings_desc">User and appearance preferences</p>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- VISTA: COMMS -->
+        <div id="view-comms" class="view">
+            <header class="comms-header">
+                <div class="container">
+                    <button class="back-btn" onclick="showView('welcome')">← <span data-i18n="navigation.home">Home</span></button>
+                    <div class="comms-title">
+                        <h1 data-i18n="comms.your_comms">Your Comms</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="add-comm-btn" onclick="openCommEditor()">+ <span data-i18n="comms.new_comm">New Comm</span></button>
+                    </div>
+                </div>
+            </header>
+
+            <section class="filters-section">
+                <div class="container">
+                    <div class="search-box">
+                        <input type="text" data-i18n="comms.search_comms" placeholder="Search comms..." id="search-input" />
+                        <button class="search-btn">🔍</button>
+                    </div>
+
+                    <div class="sort-controls">
+                        <div class="sort-dropdown">
+                            <button class="sort-btn" id="sort-btn">
+                                <span id="sort-btn-text">
+                                    📊 <span class="sort-label" data-i18n="sort.sort_by">Sort by</span>: 
+                                    <span data-i18n="sort.newest">Newest First</span>
+                                </span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="sort-options" id="sort-options">
+                                <div class="sort-option" onclick="changeSort('newest')">
+                                    <span data-i18n="sort.newest">🆕 Newest First</span>
+                                </div>
+                                <div class="sort-option" onclick="changeSort('oldest')">
+                                    <span data-i18n="sort.oldest">🕐 Oldest First</span>
+                                </div>
+                                <div class="sort-divider"></div>
+                                <div class="sort-option" onclick="changeSort('deadline_asc')">
+                                    <span data-i18n="sort.deadline_closest">⏰ Deadline (Closest)</span>
+                                </div>
+                                <div class="sort-option" onclick="changeSort('deadline_desc')">
+                                    <span data-i18n="sort.deadline_farthest">📅 Deadline (Farthest)</span>
+                                </div>
+                                <div class="sort-divider"></div>
+                                <div class="sort-option" onclick="changeSort('price_asc')">
+                                    <span data-i18n="sort.price_low_high">💰 Price (Low to High)</span>
+                                </div>
+                                <div class="sort-option" onclick="changeSort('price_desc')">
+                                    <span data-i18n="sort.price_high_low">💎 Price (High to Low)</span>
+                                </div>
+                                <div class="sort-divider"></div>
+                                <div class="sort-option" onclick="changeSort('title_asc')">
+                                    <span data-i18n="sort.title_az">🔤 Title (A-Z)</span>
+                                </div>
+                                <div class="sort-option" onclick="changeSort('title_desc')">
+                                    <span data-i18n="sort.title_za">🔠 Title (Z-A)</span>
+                                </div>
+                                <div class="sort-option" onclick="changeSort('priority')">
+                                    <span data-i18n="sort.priority">🎯 By Priority</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <select id="status-filter">
+                            <option value="" data-i18n="filters.status">Status ▼</option>
+                            <option value="pending" data-i18n="filters.pending">Pending</option>
+                            <option value="progress" data-i18n="filters.progress">In Progress</option>
+                            <option value="completed" data-i18n="filters.completed">Completed</option>
+                        </select>
+
+                        <select id="priority-filter">
+                            <option value="" data-i18n="filters.priority">Priority ▼</option>
+                            <option value="high" data-i18n="filters.high">High</option>
+                            <option value="medium" data-i18n="filters.medium">Medium</option>
+                            <option value="low" data-i18n="filters.low">Low</option>
+                        </select>
+
+                        <select id="type-filter">
+                            <option value="" data-i18n="filters.type">Type ▼</option>
+                            <option value="2d">2D</option>
+                            <option value="3d">3D</option>
+                            <option value="translation" data-i18n="filters.translation">Translation</option>
+                            <option value="web" data-i18n="filters.web_design">Web Design</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <main class="comms-main">
+                <div class="container">
+                    <div class="comms-grid" id="comms-grid"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- VISTA: CONFIGURACIÓN -->
+        <div id="view-config" class="view">
+            <header class="config-header">
+                <div class="container">
+                    <button class="back-btn" onclick="showView('welcome')">← <span data-i18n="navigation.home">Home</span></button>
+                    <h1 data-i18n="settings.title">Settings</h1>
+                </div>
+            </header>
+
+            <main class="config-main">
+                <div class="container">
+                    <div class="config-content">
+                        <div class="config-section">
+                            <h2>👤 <span data-i18n="settings.user">User</span></h2>
+                            <div class="form-group">
+                                <label data-i18n="settings.user_label">User Label</label>
+                                <input type="text" id="user-label" data-i18n="settings.user_placeholder" placeholder="Your name" />
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h2>🎨 <span data-i18n="settings.appearance">Appearance</span></h2>
+                            <div class="form-group">
+                                <label data-i18n="settings.theme">Theme</label>
+                                <select id="theme-select">
+                                    <option value="light" data-i18n="settings.light_mode">Light Mode</option>
+                                    <option value="dark" data-i18n="settings.dark_mode">Dark Mode</option>
+                                    <option value="system" data-i18n="settings.system_mode">System</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n="settings.primary_color">Primary Color</label>
+                                <div class="color-picker">
+                                    <input type="color" id="primary-color" value="#3b82f6" />
+                                    <span id="color-value">#3b82f6</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h2>🔍 <span data-i18n="settings.zoom">Zoom</span></h2>
+                            <!--
+                            <div class="form-group">
+                                <label data-i18n="settings.zoom_level">Zoom Level</label>
+                                <select id="zoom-select" onchange="changeZoom(this.value)">
+                                    <option value="90">90%</option>
+                                    <option value="100">100%</option>
+                                    <option value="110">110%</option>
+                                    <option value="125">125%</option>
+                                    <option value="150">150%</option>
+                                </select>
+                                <small data-i18n="settings.zoom_hint">Adjust zoom level (Ctrl + +/- to change quickly)</small>
+                            </div>
+                            -->
+                            
+                            <div class="zoom-shortcuts">
+                                <div class="shortcut-item">
+                                    <kbd>Ctrl</kbd> + <kbd>+</kbd> - <span data-i18n="settings.zoom_in">Zoom In</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Ctrl</kbd> + <kbd>-</kbd> - <span data-i18n="settings.zoom_out">Zoom Out</span>
+                                </div>
+                                <div class="shortcut-item">
+                                    <kbd>Ctrl</kbd> + <kbd>0</kbd> - <span data-i18n="settings.zoom_reset">Reset Zoom</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h2>🌐 <span data-i18n="settings.language">Language</span></h2>
+                            <div class="form-group">
+                                <label data-i18n="settings.select_language">Select Language</label>
+                                <select id="language-select" onchange="changeLanguage(this.value)">
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                    <option value="kl">tlhIngan Hol</option>
+                                    <option value="ac">A Ni Mal</option>
+                                    <option value="mw">Meow!</option>
+                                    <option value="uwu">uwu</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="config-section">
+                            <h2>🎨 <span data-i18n="settings.background">Custom Background</span></h2>
+                            
+                            <div class="form-group">
+                                <label data-i18n="settings.background_label">Background Image</label>
+                                <div class="background-preview" id="background-preview">
+                                    <div class="preview-placeholder" id="background-placeholder">
+                                        <span data-i18n="settings.background_default">Default Background (Gradient)</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="background-all-pages" onchange="toggleBackgroundForAllPages()">
+                                        <span data-i18n="settings.background_all_pages">Use background on all pages</span>
+                                    </label>
+                                    <small data-i18n="settings.background_all_pages_hint">If enabled, the background will be applied to all application views</small>
+                                </div>
+                                
+                                <div class="background-actions">
+                                    <button class="action-btn" onclick="changeBackgroundImage()">
+                                        🖼️ <span data-i18n="settings.change_background">Change Background</span>
+                                    </button>
+                                    
+                                    <button class="action-btn danger" onclick="removeBackgroundImage()" id="remove-background-btn" style="display: none;">
+                                        🗑️ <span data-i18n="settings.remove_background">Remove Background</span>
+                                    </button>
+                                </div>
+                                
+                                <small data-i18n="settings.background_hint">Select an image to customize the background</small>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h2>💾 <span data-i18n="settings.data">Data</span></h2>
+                            <div class="action-buttons">
+                                <button class="action-btn" onclick="openSaveFolder()">📁 <span data-i18n="settings.open_folder">Open Save Folder</span></button>
+                                <button class="action-btn danger" onclick="confirmDeleteAll()">🗑️ <span data-i18n="settings.delete_all">Delete All Data</span></button>
+                            </div>
+                            
+                            <div class="save-config-section">
+                                <button class="save-config-btn" onclick="saveConfig()">💾 <span data-i18n="settings.save_changes">Save Changes</span></button>
+                                <span id="save-status" class="save-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- MODALES -->
+        <div id="editor-modal" class="modal hidden">
+            <div class="modal-content" id="editor-modal-content"></div>
+        </div>
+
+        <div id="image-viewer" class="modal hidden">
+            <div class="viewer-content">
+                <button class="close-viewer" onclick="closeImageViewer()">×</button>
+                <div class="viewer-image-container">
+                    <img id="viewer-image" src="" alt="Reference" />
+                </div>
+                <div class="viewer-controls">
+                    <button onclick="previousImage()">← <span data-i18n="image_viewer.previous">Previous</span></button>
+                    <span id="image-counter">1/0</span>
+                    <button onclick="nextImage()"><span data-i18n="image_viewer.next">Next</span> →</button>
+                    <button class="delete-image-btn" onclick="deleteCurrentImage()"><span data-i18n="image_viewer.delete_image">Delete</span></button>
+                    <button class="zoom-btn" onclick="toggleZoom()">🔍 <span data-i18n="image_viewer.zoom">Zoom</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="i18n.js"></script>
+    <script src="./renderer.js"></script>
+</body>
+</html>
