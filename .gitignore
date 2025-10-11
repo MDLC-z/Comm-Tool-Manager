@@ -6,6 +6,7 @@ node_modules/
 
 # Builds y binarios
 dist/
+build/
 out/
 *.exe
 *.nupkg
