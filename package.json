@@ -1,6 +1,6 @@
 {
   "name": "comm-manager",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Gestor de commissiones local",
   "main": "src/main.js",
   "scripts": {
@@ -13,7 +13,12 @@
     "dist:all": "electron-builder --win --linux --mac",
     "clean": "rm -rf dist node_modules/fsevents*"
   },
-  "keywords": ["commissions", "art", "manager", "organizer"],
+  "keywords": [
+    "commissions",
+    "art",
+    "manager",
+    "organizer"
+  ],
   "author": "Pan🍞",
   "license": "ISC",
   "type": "commonjs",
@@ -37,7 +42,7 @@
     },
     "files": [
       "src/**/*",
-      "lang/**/*", 
+      "lang/**/*",
       "assets/**/*",
       "!**/node_modules/fsevents/**",
       "!**/node_modules/fsevents*",
@@ -53,26 +58,30 @@
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
     ],
-
     "win": {
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.ico"
     },
-    
     "linux": {
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "tar.gz",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.png",
