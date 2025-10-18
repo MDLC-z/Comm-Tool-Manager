@@ -21,3 +21,4 @@ Thumbs.db
 
 # Configuración local
 .env
+package-lock.json
