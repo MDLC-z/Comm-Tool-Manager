@@ -156,9 +156,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // INICIALIZAR i18n PRIMERO, ANTES DE CUALQUIER OTRA COSA
   if (window.i18n && window.i18n.init) {
     console.log("Initializing i18n...");
-    await window.i18n.init();
+    try {
+      await window.i18n.init();
+      console.log("i18n initialized successfully");
+    } catch (error) {
+      console.error("Error initializing i18n:", error);
+    }
+  } else {
+    console.warn("i18n not available");
   }
 
   await initializeApp();
@@ -178,44 +186,134 @@ async function initializeApp() {
     const config = await window.electronAPI.loadConfig();
     console.log("Configuration loaded:", config);
 
-    // Actualizar appState (PERO NO EL IDIOMA)
+    // Actualizar appState
     appState.currentUser = config.username || "User";
     appState.theme = config.theme || "light";
     appState.primaryColor = config.primaryColor || "#3b82f6";
     appState.backgroundImage = config.backgroundImage || null;
     appState.backgroundAllPages = config.backgroundAllPages || false;
-    // NO actualizar appState.language aquí - i18n maneja esto por separado
     appState.zoomLevel = config.zoomLevel || "100";
 
+    // IMPORTANTE: Aplicar configuración INMEDIATAMENTE
+    console.log("Applying configuration to UI...");
+    await applyConfigImmediately(config); // Nueva función
+
+    // Luego inicializar i18n
+    if (window.i18n && window.i18n.init) {
+      console.log("Initializing i18n...");
+      try {
+        await window.i18n.init();
+        console.log("i18n initialized successfully");
+      } catch (error) {
+        console.error("Error initializing i18n:", error);
+      }
+    }
+
     console.log("Loading comms...");
-    appState.comms = await window.electronAPI.loadComms();
+
+    // Primero intentar cargar comms individuales
+    appState.comms = await window.electronAPI.loadAllIndividualComms();
+
+    // Si no hay comms individuales, cargar del sistema antiguo
+    if (appState.comms.length === 0) {
+      console.log("No individual comms found, loading from old system...");
+      appState.comms = await window.electronAPI.loadComms();
+    }
+
     console.log("Comms loaded:", appState.comms.length);
 
-    applyConfigToUI();
-
+    // CARGAR FONDO DESPUÉS DE LA CONFIGURACIÓN
     await loadBackgroundSettings();
 
     console.log("Application initialized successfully");
   } catch (error) {
     console.error("Error initializing application:", error);
-    applyConfigToUI();
-    applyDefaultBackground();
-    // Asegurar zoom por defecto incluso en caso de error
-    changeZoom("100");
+    // Aplicar config por defecto incluso en caso de error
+    await applyConfigImmediately({
+      username: "User",
+      theme: "light",
+      primaryColor: "#3b82f6",
+      backgroundImage: null,
+      backgroundAllPages: false,
+      zoomLevel: "100",
+    });
   }
 }
 
-function applyConfigToUI() {
-  console.log("Applying config to UI");
+async function applyConfigToUI() {
+  console.log("Applying config to UI - Current state:", {
+    theme: appState.theme,
+    primaryColor: appState.primaryColor,
+    user: appState.currentUser,
+    zoom: appState.zoomLevel,
+  });
+
+  // Aplicar tema
   document.body.setAttribute("data-theme", appState.theme);
+  console.log("Theme applied to UI:", appState.theme);
+
+  // Aplicar color primario
   document.documentElement.style.setProperty(
     "--primary-color",
     appState.primaryColor
   );
+  console.log("Primary color applied to UI:", appState.primaryColor);
 
+  // Actualizar nombre de usuario en la UI
   const usernameDisplay = document.getElementById("username-display");
   if (usernameDisplay) {
     usernameDisplay.textContent = appState.currentUser;
+    console.log("Username displayed:", appState.currentUser);
+  }
+
+  // Aplicar zoom
+  if (appState.zoomLevel) {
+    changeZoom(appState.zoomLevel);
+  }
+
+  // Manejar i18n de forma más segura
+  if (window.i18n) {
+    try {
+      // Si i18n tiene un método para verificar si está listo, úsalo
+      if (window.i18n.applyTranslations) {
+        await window.i18n.applyTranslations();
+      }
+    } catch (error) {
+      console.warn("i18n translation application failed:", error);
+    }
+  }
+
+  // Actualizar la vista de configuración si está activa
+  const configView = document.getElementById("view-config");
+  if (configView && configView.classList.contains("active")) {
+    loadConfigPage();
+  }
+
+  console.log("UI config application completed");
+}
+
+function changeZoom(zoomLevel) {
+  console.log("Changing zoom to:", zoomLevel);
+
+  // Remover clases de zoom anteriores
+  document.body.classList.remove(
+    "zoom-90",
+    "zoom-100",
+    "zoom-110",
+    "zoom-125",
+    "zoom-150"
+  );
+
+  // Aplicar nueva clase de zoom
+  document.body.classList.add(`zoom-${zoomLevel}`);
+
+  // Actualizar estado
+  appState.zoomLevel = zoomLevel;
+
+  // Actualizar selector en configuración si existe
+  const zoomSelect = document.getElementById("zoom-level");
+  if (zoomSelect) {
+    zoomSelect.value = zoomLevel;
   }
 }
 
@@ -501,10 +599,9 @@ function loadConfigPage() {
     colorValue.textContent = appState.primaryColor || "#3b82f6";
   }
   if (languageSelect) {
-    // USAR i18n COMO FUENTE DE VERDAD PARA EL IDIOMA
-    const currentLang = window.i18n ? window.i18n.getCurrentLanguage() : "en";
-    languageSelect.value = currentLang;
-    console.log("Language select set to:", currentLang);
+    // USAR EL VALOR ACTUAL DE appState.language
+    languageSelect.value = appState.language || "en";
+    console.log("Language select set to:", languageSelect.value);
   }
   if (zoomSelect) {
     zoomSelect.value = appState.zoomLevel || "100";
@@ -691,6 +788,8 @@ let imageCache = new Map();
 // =============================================
 async function loadBackgroundSettings() {
   try {
+    console.log("Loading background settings...");
+
     if (appState.backgroundImage) {
       // Verificar si ya tenemos la imagen en cache
       if (imageCache.has(appState.backgroundImage)) {
@@ -709,8 +808,11 @@ async function loadBackgroundSettings() {
         applyBackgroundImage(imageData, appState.backgroundAllPages);
       }
     } else {
+      console.log("No background image, applying default");
       applyDefaultBackground();
     }
+
+    console.log("Background settings loaded successfully");
   } catch (error) {
     console.error("Error loading background settings:", error);
     applyDefaultBackground();
@@ -1122,8 +1224,25 @@ function updateSortButton() {
 // =============================================
 // COMMS EDITOR (MODAL)
 // =============================================
-function openCommEditor(commId = null) {
+
+let currentTempCommId = null;
+
+async function openCommEditor(commId = null) {
   appState.currentEditingComm = commId;
+
+  // Si es una nueva comm, crear carpeta temporal
+  if (!commId) {
+    try {
+      currentTempCommId = await window.electronAPI.createTempComm();
+      console.log("Temp comm created:", currentTempCommId);
+    } catch (error) {
+      console.error("Error creating temp comm:", error);
+      showErrorToast("Error creating temporary comm", "Comm Error");
+      return;
+    }
+  } else {
+    currentTempCommId = null;
+  }
 
   const modal = document.getElementById("editor-modal");
   if (!modal) return;
@@ -1133,7 +1252,17 @@ function openCommEditor(commId = null) {
   document.body.style.overflow = "hidden";
 }
 
-function closeEditor() {
+async function closeEditor() {
+  // Si hay una comm temporal y no se guardó, cancelarla
+  if (currentTempCommId && !appState.currentEditingComm) {
+    try {
+      await window.electronAPI.cancelTempComm(currentTempCommId);
+      console.log("Temp comm cancelled:", currentTempCommId);
+    } catch (error) {
+      console.error("Error cancelling temp comm:", error);
+    }
+  }
+
   const modal = document.getElementById("editor-modal");
   if (modal) {
     modal.classList.add("hidden");
@@ -1141,6 +1270,7 @@ function closeEditor() {
     appState.currentEditingComm = null;
     appState.currentImages = [];
     appState.currentImageIndex = 0;
+    currentTempCommId = null;
   }
 }
 
@@ -1378,36 +1508,17 @@ async function saveComm() {
   const price = parseInt(document.getElementById("comm-price").value) || 0;
   const deadline = document.getElementById("comm-deadline").value;
 
-  const validationTitle = window.t
-    ? window.t("alerts.validation_title")
-    : "Title is required";
-  const validationCommissioner = window.t
-    ? window.t("alerts.validation_commissioner")
-    : "Commissioner name is required";
-  //const validationPrice = window.t ? window.t('alerts.validation_price') : 'Price must be greater than 0';
-  const validationDeadline = window.t
-    ? window.t("alerts.validation_deadline")
-    : "Deadline is required";
-
+  // Validaciones...
   if (!title) {
-    showErrorToast(validationTitle, "Validation Error");
+    showErrorToast("Title is required", "Validation Error");
     return;
   }
-
   if (!commissioner) {
-    showErrorToast(validationCommissioner, "Validation Error");
+    showErrorToast("Commissioner name is required", "Validation Error");
     return;
   }
-
-  /*
-    if (price <= 0) {
-        alert(validationPrice);
-        return;
-    }
-    */
-
   if (!deadline) {
-    showErrorToast(validationDeadline, "Validation Error");
+    showErrorToast("Deadline is required", "Validation Error");
     return;
   }
 
@@ -1422,7 +1533,7 @@ async function saveComm() {
     priority: document.getElementById("comm-priority").value,
     type: document.getElementById("comm-type").value,
     description: document.getElementById("comm-description").value,
-    references: appState.currentImages,
+    references: appState.currentReferences,
     pinned: appState.currentEditingComm
       ? appState.comms.find((c) => c.id === appState.currentEditingComm)
           ?.pinned || false
@@ -1435,6 +1546,15 @@ async function saveComm() {
   };
 
   try {
+    // Guardar comm individual
+    await window.electronAPI.saveIndividualComm(commData);
+
+    // Si era una comm temporal, mover referencias
+    if (currentTempCommId && !appState.currentEditingComm) {
+      await window.electronAPI.moveTempToComm(currentTempCommId, commData.id);
+    }
+
+    // Actualizar estado local
     if (!appState.currentEditingComm) {
       appState.comms.push(commData);
     } else {
@@ -1446,12 +1566,10 @@ async function saveComm() {
       }
     }
 
+    // Guardar lista de comms (opcional, para compatibilidad)
     await window.electronAPI.saveComms(appState.comms);
 
-    const successMessage = window.t
-      ? window.t("alerts.comm_saved")
-      : "Comm saved successfully";
-    showSuccessToast(successMessage);
+    showSuccessToast("Comm saved successfully");
     closeEditor();
     renderCommsGrid();
   } catch (error) {
@@ -1542,27 +1660,18 @@ async function addReferenceImage() {
 
   input.onchange = async (e) => {
     const files = Array.from(e.target.files);
-    const currentCommId = appState.currentEditingComm;
+    const currentCommId = appState.currentEditingComm || currentTempCommId;
 
     if (!currentCommId) {
-      const alertText = window.t
-        ? window.t("alerts.save_comm_first")
-        : "First you need to save the comm before adding references";
-      showWarningToast(alertText, "Save Comm First");
+      showWarningToast(
+        "First you need to save the comm before adding references",
+        "Save Comm First"
+      );
       return;
     }
 
     for (const file of files) {
       try {
-        // NO limit size
-        /*
-                if (file.size > 100 * 1024 * 1024) {
-                    const alertText = window.t ? window.t('alerts.file_too_large', { name: file.name }) : `The file ${file.name} is too large (max 100MB)`;
-                    alert(alertText);
-                    continue;
-                }
-                */
-
         const fileExtension = file.name.split(".").pop();
         const filename = `ref_${Date.now()}_${Math.random()
           .toString(36)
@@ -1575,33 +1684,40 @@ async function addReferenceImage() {
           fileData = await fileToBase64(file);
           fileType = "image";
         } else if (file.type.startsWith("video/")) {
-          // Para videos, usar ArrayBuffer
           const arrayBuffer = await file.arrayBuffer();
           fileData = arrayBuffer;
           fileType = "video";
         } else {
-          // Para otros archivos
           const arrayBuffer = await file.arrayBuffer();
           fileData = arrayBuffer;
           fileType = "file";
         }
 
-        // Guardar referencia
-        await window.electronAPI.saveCommReference(
-          currentCommId,
-          fileData,
-          filename,
-          fileType
-        );
+        // Guardar en temp o en comm final
+        if (appState.currentEditingComm) {
+          await window.electronAPI.saveCommReference(
+            appState.currentEditingComm,
+            fileData,
+            filename,
+            fileType
+          );
+        } else {
+          await window.electronAPI.saveTempReference(
+            currentTempCommId,
+            fileData,
+            filename,
+            fileType
+          );
+        }
 
         // Recargar referencias
-        await loadCommReferences(currentCommId);
+        await loadCommReferences(currentCommId, !appState.currentEditingComm);
       } catch (error) {
         console.error("Error adding reference:", error);
-        const alertText = window.t
-          ? window.t("alerts.error_adding_file", { name: file.name })
-          : `Error adding ${file.name}`;
-        showErrorToast(`${alertText}: ${error.message}`, "File Error");
+        showErrorToast(
+          `Error adding ${file.name}: ${error.message}`,
+          "File Error"
+        );
       }
     }
   };
@@ -1612,6 +1728,24 @@ async function addReferenceImage() {
 async function loadCommReferences(commId) {
   try {
     const references = await window.electronAPI.getCommReferences(commId);
+    appState.currentReferences = references;
+    updateReferenceGallery();
+  } catch (error) {
+    console.error("Error loading references:", error);
+    appState.currentReferences = [];
+    updateReferenceGallery();
+  }
+}
+
+async function loadCommReferences(commId, isTemp = false) {
+  try {
+    let references;
+    if (isTemp) {
+      references = await window.electronAPI.getTempReferences(commId);
+    } else {
+      references = await window.electronAPI.getCommReferences(commId);
+    }
+
     appState.currentReferences = references;
     updateReferenceGallery();
   } catch (error) {
@@ -2332,4 +2466,180 @@ async function showSuccessConfirm(message, title = "Confirm Action") {
 
 async function showInfoConfirm(message, title = "Please Confirm") {
   return await showConfirm(title, message, "info");
+}
+
+// =============================================
+// MIGRATION SYSTEM
+// =============================================
+
+async function checkAndOfferMigration() {
+  try {
+    // Solo verificar migración si el sistema individual está disponible
+    if (!window.electronAPI.loadAllIndividualComms) {
+      console.log(
+        "Individual comms system not available, skipping migration check"
+      );
+      return;
+    }
+
+    // Cargar comms del sistema antiguo para verificar
+    let oldComms = [];
+    try {
+      oldComms = await window.electronAPI.loadComms();
+    } catch (error) {
+      console.log("Could not load old comms for migration check:", error);
+      return;
+    }
+
+    // Verificar si ya existen comms individuales
+    let individualComms = [];
+    try {
+      individualComms = await window.electronAPI.loadAllIndividualComms();
+    } catch (error) {
+      console.log(
+        "Could not load individual comms for migration check:",
+        error
+      );
+    }
+
+    // Solo ofrecer migración si hay comms antiguos y no hay individuales
+    if (oldComms && oldComms.length > 0 && individualComms.length === 0) {
+      console.log(`Found ${oldComms.length} comms to migrate`);
+
+      // Esperar un poco para que la app esté completamente cargada
+      setTimeout(async () => {
+        const shouldMigrate = await showMigrationDialog(oldComms.length);
+        if (shouldMigrate) {
+          await performMigration();
+        }
+      }, 1000);
+    } else {
+      console.log(
+        "No migration needed - old comms:",
+        oldComms.length,
+        "individual comms:",
+        individualComms.length
+      );
+    }
+  } catch (error) {
+    console.error("Error checking for migration:", error);
+    // No bloquear la app por errores de migración
+  }
+}
+
+async function showMigrationDialog(commCount) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirm-modal");
+    const icon = document.getElementById("confirm-icon");
+    const title = document.getElementById("confirm-title");
+    const message = document.getElementById("confirm-message");
+    const cancelBtn = document.getElementById("confirm-cancel");
+    const okBtn = document.getElementById("confirm-ok");
+
+    icon.textContent = "🔄";
+    title.textContent = "Migration Available";
+    message.textContent = `Found ${commCount} comms in the old format. Would you like to migrate them to the new individual file system? This will improve performance and organization.`;
+
+    okBtn.textContent = "Migrate";
+    okBtn.className = "confirm-btn success";
+
+    const handleConfirm = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    const cleanup = () => {
+      modal.classList.add("hidden");
+      okBtn.removeEventListener("click", handleConfirm);
+      cancelBtn.removeEventListener("click", handleCancel);
+    };
+
+    okBtn.addEventListener("click", handleConfirm);
+    cancelBtn.addEventListener("click", handleCancel);
+
+    modal.classList.remove("hidden");
+  });
+}
+
+async function performMigration() {
+  const saveBtn = document.querySelector(".save-config-btn");
+  const originalText = saveBtn ? saveBtn.innerHTML : null;
+
+  try {
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = "🔄 Migrating...";
+    }
+
+    showInfoToast("Starting migration process...", "Migration");
+
+    const result = await window.electronAPI.migrateToIndividualComms();
+
+    if (result.migrated > 0) {
+      showSuccessToast(
+        `Migration completed: ${result.migrated} comms migrated to new system`,
+        "Migration Successful"
+      );
+
+      // Recargar comms desde el nuevo sistema
+      try {
+        appState.comms = await window.electronAPI.loadAllIndividualComms();
+        renderCommsGrid();
+        console.log("Comms reloaded after migration:", appState.comms.length);
+      } catch (reloadError) {
+        console.error("Error reloading comms after migration:", reloadError);
+        // Recargar del sistema antiguo como fallback
+        appState.comms = await window.electronAPI.loadComms();
+      }
+    } else {
+      showInfoToast(
+        "No comms needed migration or migration failed",
+        "Migration"
+      );
+    }
+  } catch (error) {
+    console.error("Migration error:", error);
+    showErrorToast(`Migration failed: ${error.message}`, "Migration Error");
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalText;
+    }
+  }
+}
+
+async function applyConfigImmediately(config) {
+  console.log("Applying config immediately:", config);
+
+  // Aplicar tema inmediatamente
+  document.body.setAttribute("data-theme", config.theme || "light");
+  console.log("Theme applied:", config.theme);
+
+  // Aplicar color primario inmediatamente
+  document.documentElement.style.setProperty(
+    "--primary-color",
+    config.primaryColor || "#3b82f6"
+  );
+  console.log("Primary color applied:", config.primaryColor);
+
+  // Actualizar nombre de usuario inmediatamente
+  const usernameDisplay = document.getElementById("username-display");
+  if (usernameDisplay) {
+    usernameDisplay.textContent = config.username || "User";
+    console.log("Username applied:", config.username);
+  }
+
+  // Aplicar zoom si existe
+  if (config.zoomLevel) {
+    changeZoom(config.zoomLevel);
+    console.log("Zoom applied:", config.zoomLevel);
+  }
+
+  // No esperar por i18n para estas configuraciones básicas
+  // Las traducciones vendrán después
 }
