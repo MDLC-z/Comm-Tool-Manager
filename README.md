@@ -101,5 +101,3 @@ TQM bro 💚
 ---
 
 **Note**: This release focuses on improving user experience and expanding language support while maintaining the lightweight, local-data philosophy of the application.
-
-**Full Changelog**: https://github.com/MDLC-z/Comm-Tool-Manager/compare/v0.0.1...v0.0.2
